@@ -16,7 +16,7 @@ torch.manual_seed(42)
 
 
 def evaluate_model_on_tests(
-    model, test_dataloaders, metric, use_gpu=True, return_pred=False
+    model, test_dataloaders, metric, use_gpu=True, return_pred=False, use_tqdm=True
 ):
     """This function takes a pytorch model and evaluate it on a list of\
     dataloaders using the provided metric function.
@@ -46,30 +46,56 @@ def evaluate_model_on_tests(
         model = model.cuda()
     model.eval()
     with torch.no_grad():
-        for i in tqdm(range(len(test_dataloaders))):
-            rng_state = torch.get_rng_state()
-            test_dataloader_iterator = iter(test_dataloaders[i])
-            # since iterating over the dataloader changes torch random state
-            # we set it again to its previous value
-            # https://discuss.pytorch.org/t/does-iterating-over-unshuffled-dataloader-change-random-state/173137
-            torch.set_rng_state(rng_state)
-            y_pred_final = []
-            y_true_final = []
-            for X, y in test_dataloader_iterator:
-                if torch.cuda.is_available() and use_gpu:
-                    X = X.cuda()
-                    y = y.cuda()
-                y_pred = model(X).detach().cpu()
-                y = y.detach().cpu()
-                y_pred_final.append(y_pred.numpy())
-                y_true_final.append(y.numpy())
+        if use_tqdm:
+            for i in tqdm(range(len(test_dataloaders))):
+                rng_state = torch.get_rng_state()
+                test_dataloader_iterator = iter(test_dataloaders[i])
+                # since iterating over the dataloader changes torch random state
+                # we set it again to its previous value
+                # https://discuss.pytorch.org/t/does-iterating-over-unshuffled-dataloader-change-random-state/173137
+                torch.set_rng_state(rng_state)
+                y_pred_final = []
+                y_true_final = []
+                for X, y in test_dataloader_iterator:
+                    if torch.cuda.is_available() and use_gpu:
+                        X = X.cuda()
+                        y = y.cuda()
+                    y_pred = model(X).detach().cpu()
+                    y = y.detach().cpu()
+                    y_pred_final.append(y_pred.numpy())
+                    y_true_final.append(y.numpy())
 
-            y_true_final = np.concatenate(y_true_final)
-            y_pred_final = np.concatenate(y_pred_final)
-            results_dict[f"client_test_{i}"] = metric(y_true_final, y_pred_final)
-            if return_pred:
-                y_true_dict[f"client_test_{i}"] = y_true_final
-                y_pred_dict[f"client_test_{i}"] = y_pred_final
+                y_true_final = np.concatenate(y_true_final)
+                y_pred_final = np.concatenate(y_pred_final)
+                results_dict[f"client_test_{i}"] = metric(y_true_final, y_pred_final)
+                if return_pred:
+                    y_true_dict[f"client_test_{i}"] = y_true_final
+                    y_pred_dict[f"client_test_{i}"] = y_pred_final
+        else:
+            for i in range(len(test_dataloaders)):
+                rng_state = torch.get_rng_state()
+                test_dataloader_iterator = iter(test_dataloaders[i])
+                # since iterating over the dataloader changes torch random state
+                # we set it again to its previous value
+                # https://discuss.pytorch.org/t/does-iterating-over-unshuffled-dataloader-change-random-state/173137
+                torch.set_rng_state(rng_state)
+                y_pred_final = []
+                y_true_final = []
+                for X, y in test_dataloader_iterator:
+                    if torch.cuda.is_available() and use_gpu:
+                        X = X.cuda()
+                        y = y.cuda()
+                    y_pred = model(X).detach().cpu()
+                    y = y.detach().cpu()
+                    y_pred_final.append(y_pred.numpy())
+                    y_true_final.append(y.numpy())
+
+                y_true_final = np.concatenate(y_true_final)
+                y_pred_final = np.concatenate(y_pred_final)
+                results_dict[f"client_test_{i}"] = metric(y_true_final, y_pred_final)
+                if return_pred:
+                    y_true_dict[f"client_test_{i}"] = y_true_final
+                    y_pred_dict[f"client_test_{i}"] = y_pred_final
     model.train()
     if return_pred:
         return results_dict, y_true_dict, y_pred_dict
