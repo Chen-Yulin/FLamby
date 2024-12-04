@@ -14,3 +14,4 @@ from flamby.datasets.fed_tcga_brca.model import Baseline  # isort: skip
 from flamby.datasets.fed_tcga_brca.loss import (
     BaselineLoss,
 )  # isort: skip depends on Baseline
+from flamby.datasets.fed_tcga_brca.advanced_model import EnhancedModel
