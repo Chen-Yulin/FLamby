@@ -63,12 +63,13 @@ class FedAvgFineTuning(FedAvg):
         learning_rate: float,
         num_updates: int,
         nrounds: int,
-        num_fine_tuning_steps: int,
+        num_fine_tuning_steps: int = 10,
         log: bool = False,
         log_period: int = 100,
         bits_counting_function: callable = None,
         logdir: str = "./runs",
         log_basename: str = "fed_avg_ft",
+        seed=None,
     ):
         super().__init__(
             training_dataloaders,
